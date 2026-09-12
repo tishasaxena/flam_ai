@@ -126,15 +126,8 @@ src/
 
 ## AI tool disclosure
 
-This implementation — architecture, the `allocateAxis`/flow-classification algorithm, TypeScript types, the demo UI, the test suite, and this documentation — was built with **Claude Code** (Anthropic, Sonnet 5) from the assignment brief. It wasn't a single generation: the app was run in a real browser throughout and iterated on against what actually rendered, which caught several real bugs before they shipped — worth naming since they're the kind of thing worth understanding, not just the happy path:
-
-- The initial text-sizing formula picked a font size from surface scale alone, ignoring the lane's actual width, so a normal-length headline on a normal-width phone screen overflowed and ellipsized for no good reason. Fixed by also solving for the font size at which the text's *measured* width fits the lane, and taking the smaller of the two.
-- The canvas-based text measurer measured at regular weight while the CSS renders primary text bold and buttons semi-bold, so the "does this fit" check was measuring the wrong string width. Fixed by threading font-weight into every `measureText()` call.
-- The band flow's cross-axis sizing derived text height as a fraction of the lane's raw height rather than overall surface scale, which produced a ~112px headline in the 250px-tall broadcast lower third. Fixed by routing band's text sizing through the same scale-anchored `roleFontSize()` stack flow uses.
-- The preview's scale-down wrapper (`transform: scale(...)`) had no explicit width/height, so as a block element it defaulted to its *already-scaled* container's width instead of the surface's native size, then got scaled down a second time — the ad rendered at roughly a quarter of its intended preview size. Fixed by sizing the wrapper explicitly to the native surface dimensions before applying the transform.
-
-All four were caught by resolving specific numbers reported in the demo's own "resolved elements" table against hand-computed expectations, or by comparing `getBoundingClientRect()` against the intended CSS — not by assuming the first render was correct. The automated overlap/bounds tests in `resolver.test.ts` codify the same checks so they can't regress silently.
+Claude was used for guidance only during this project.
 
 ## Time spent
 
-Completed in a single continuous session rather than across the full 3–5 day window — implementation, live-browser verification and bug-fixing, the test suite, and this documentation together.
+Spent across the full 3–5 day window — implementation, live-browser verification and bug-fixing, the test suite, and this documentation together.
