@@ -81,7 +81,7 @@ An early version derived a text element's height as a fraction of *whatever axis
 
 - **`spec.ts`** — `AdElement` is a discriminated union on `type` (`"text" | "image" | "button"`), each variant carrying only its own fields (`text`, `label`, `alt`/`src`). Assigning a `label` to a `type: "text"` element, or a `role` outside the five-member `ElementRole` union, is a compile error, not a runtime surprise. `defineAd()` re-validates at runtime (duplicate ids, unknown role/type, missing content) because real ad content is frequently assembled from JSON — a CMS or ad-server payload — where the literal types have already erased.
 - **`surfaces.ts`** — `SurfaceProfile` is a plain interface, but `defineSurface()` enforces cross-field constraints TypeScript's type system can't express on its own: `touchOnly: true` requires `minTapTarget`; `viewingDistance: "far"` requires `minTextSize`; safe-area insets can't exceed the surface; `minTapTarget` can't exceed the shorter side. Each throws a specific, actionable message.
-- **`layout.ts`** — `ResolvedElement` is a discriminated union on `kind` (`"text" | "image" | "button"`) mirroring `AdElement`'s shape, so a renderer can `switch` on `el.kind` and get the right fields (`fontSize`, `truncated`) without a cast. `ResolvedLayout` carries only geometry — no content — so it's meaningful across renderers.
+- **`layout.ts`** — `ResolvedElement` is a discriminated union on `kind` (`"text" | "image" | "button"`) mirroring `AdElement`'s shape, so a renderer can `switch` on `el.kind` and get the right fields (`fontSize`, `truncated`) without a cast. `ResolvedLayout` carries geometry plus resolved constraint decisions (`flow`, `colorScheme`) but never content — so it's meaningful across renderers. `colorScheme: ColorScheme` (`"light" | "dark"`, from `contrast.ts`) means a renderer can only ever request one of the two WCAG-checked palettes; there's no `string` color field for it to freehand an inaccessible one.
 - **Exhaustiveness** — every `switch (el.type)` in the resolver ends in `default: return assertNever(el)`, so adding a fourth element type without updating every sizing function is a compile error, not a silent `undefined`.
 
 ## Architecture
@@ -95,12 +95,14 @@ src/
 ├── layout.ts           Resolved output types — Rect, ResolvedElement, ResolvedLayout
 ├── axis.ts             allocateAxis() — the one generic priority/shrink/drop primitive
 ├── text-metrics.ts     TextMeasurer type + heuristic and canvas-backed implementations
+├── contrast.ts          WCAG contrast math + the light/dark accessible color palettes
 ├── resolver.ts         resolveLayout() — flow classification, sizing, placement
 ├── render-dom.tsx       ResolvedLayout + AdSpec → React/DOM
 ├── render-canvas.tsx    ResolvedLayout + AdSpec → Canvas (bonus second renderer)
 ├── demo-ad.ts           The example product ad spec used by the demo
 ├── App.tsx              Demo shell: surface picker, custom-surface form, renderer toggle
 ├── axis.test.ts         Unit tests for allocateAxis
+├── contrast.test.ts     Verifies every palette pairing actually meets WCAG AA
 └── resolver.test.ts     Overlap/bounds/degradation/generalization tests for resolveLayout
 ```
 
@@ -110,9 +112,7 @@ src/
 - **Canvas renderer**: `render-canvas.tsx`, sharing `resolveLayout()`'s output with the DOM renderer.
 - **Animated surface transitions**: `render-dom.tsx` elements carry a CSS `transition` on position/size/font-size, so switching surfaces in the demo animates rather than jump-cuts.
 - **Text-measurement-aware layout**: `text-metrics.ts` exposes a `TextMeasurer` the resolver depends on as an injected function (keeping the resolver DOM-free); the demo passes `createCanvasTextMeasurer()`, which uses a real offscreen-canvas `measureText()` (weight-aware — primary text and button labels measure bold/semi-bold to match what actually renders) to size and truncate text, rather than a fixed character-count estimate. The default (`estimateTextWidth`) is the character-count heuristic, used automatically when no measurer is supplied (tests, non-browser environments).
-- **Accessibility as a first-class constraint**: `minTapTarget` is enforced as a hard floor (not a suggestion) for buttons whenever a surface declares it, validated at `defineSurface()` time.
-
-Not implemented: contrast-aware branding placement.
+- **Accessibility as a first-class constraint**: `minTapTarget` is enforced as a hard floor (not a suggestion) for buttons whenever a surface declares it, validated at `defineSurface()` time. Contrast is the second constraint of this kind: a surface declares `background: "light" | "dark"` (a broadcast lower third compositing over dark video is a real example — see `surfaces.ts`), the resolver turns that into `ResolvedLayout.colorScheme`, and both renderers pick every text/button/branding color from one of [`contrast.ts`](src/contrast.ts)'s two palettes. Each palette's pairings are checked against the real WCAG relative-luminance formula in `contrast.test.ts` (4.5:1 minimum) — not eyeballed, not just two hardcoded "looks." The custom-surface form's Background toggle exercises this live for the unknown-5th-surface case too.
 
 ## Known limitations
 

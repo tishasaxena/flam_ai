@@ -1,9 +1,13 @@
 /**
- * The resolved layout output — pure geometry, no content. A renderer pairs
- * this with the original AdSpec (by element id) to know *what* to draw;
- * this module only says *where* and *how big*. Keeping content out of the
- * output is what lets render-dom.tsx and render-canvas.tsx share it as-is.
+ * The resolved layout output — geometry and resolved rendering constraints,
+ * no content. A renderer pairs this with the original AdSpec (by element
+ * id) to know *what* to draw; this module says *where*, *how big*, and
+ * (via `colorScheme`) *which accessible palette* — never the actual copy,
+ * image src, or label text. Keeping content out of the output is what lets
+ * render-dom.tsx and render-canvas.tsx share it as-is.
  */
+
+import type { ColorScheme } from "./contrast";
 
 export interface Rect {
   x: number;
@@ -48,6 +52,8 @@ export interface ResolvedLayout {
   surfaceHeight: number;
   /** Which structural arrangement the resolver chose for this surface's geometry. Purely informational — renderers don't need to branch on it. */
   flow: FlowKind;
+  /** Which accessible color palette to draw with, decided from `surface.background` — see contrast.ts. A renderer looks this up, it never picks colors itself. */
+  colorScheme: ColorScheme;
   /** Visible elements only — a renderer can map over this with no filtering. */
   elements: ResolvedElement[];
   /** Elements the resolver removed entirely to satisfy higher-priority ones, with a human-readable reason. */

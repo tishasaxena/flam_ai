@@ -29,6 +29,14 @@ export interface SurfaceProfile {
   viewingDistance?: ViewingDistance;
   /** Non-printing bleed margin, for print surfaces (extends beyond width/height; not yet consumed by the resolver — see README limitations). */
   bleed?: number;
+  /**
+   * What this surface composites over — a broadcast lower third sits on
+   * top of dark video far more often than white. Defaults to "light".
+   * The resolver turns this into `ResolvedLayout.colorScheme`; every color
+   * pairing either scheme uses is checked against WCAG AA in
+   * contrast.test.ts, not just eyeballed. See contrast.ts.
+   */
+  background?: "light" | "dark";
 }
 
 /**
@@ -103,6 +111,7 @@ export const surfaces = {
     safeArea: { top: 8, right: 60, bottom: 8, left: 60 },
     viewingDistance: "far",
     minTextSize: 32,
+    background: "dark",
   }),
   retailKiosk: defineSurface({
     id: "retailKiosk",

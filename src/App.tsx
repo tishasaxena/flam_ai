@@ -50,6 +50,7 @@ interface CustomSurfaceForm {
   minTapTarget: string;
   minTextSize: string;
   viewingDistance: "" | ViewingDistance;
+  background: "light" | "dark";
   safeAreaTop: string;
   safeAreaRight: string;
   safeAreaBottom: string;
@@ -63,6 +64,7 @@ const DEFAULT_CUSTOM_FORM: CustomSurfaceForm = {
   minTapTarget: "48",
   minTextSize: "",
   viewingDistance: "",
+  background: "light",
   safeAreaTop: "16",
   safeAreaRight: "16",
   safeAreaBottom: "16",
@@ -84,6 +86,7 @@ function buildCustomSurface(form: CustomSurfaceForm): SurfaceProfile {
     minTapTarget: form.minTapTarget ? Number(form.minTapTarget) : undefined,
     minTextSize: form.minTextSize ? Number(form.minTextSize) : undefined,
     viewingDistance: form.viewingDistance || undefined,
+    background: form.background,
   });
 }
 
@@ -243,6 +246,16 @@ export default function App() {
                       <option value="far">far</option>
                     </select>
                   </label>
+                  <label>
+                    Background
+                    <select
+                      value={customForm.background}
+                      onChange={(e) => updateCustomForm("background", e.target.value as CustomSurfaceForm["background"])}
+                    >
+                      <option value="light">light</option>
+                      <option value="dark">dark</option>
+                    </select>
+                  </label>
                 </div>
 
                 <details className="custom-surface-form__advanced">
@@ -337,6 +350,7 @@ export default function App() {
                   <span>{Math.round(displayScale * 100)}% scale</span>
                   <span className="preview__divider">·</span>
                   <span className={`flow-badge flow-badge--${layout.flow}`}>{layout.flow}</span>
+                  <span className={`scheme-badge scheme-badge--${layout.colorScheme}`}>{layout.colorScheme} bg</span>
                 </div>
               </div>
 

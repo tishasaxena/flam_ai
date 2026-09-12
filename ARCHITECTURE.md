@@ -5,18 +5,21 @@ This document is the deep dive. [README.md](README.md) has the short version, se
 ## Module graph
 
 ```
-spec.ts        surfaces.ts        text-metrics.ts
-    \               |                   /
-     \              |                  /
-      \             |                 /
-       ----->  resolver.ts  <---------
-        (imports axis.ts, layout.ts)
-                    |
-                    v
-              layout.ts (types only, no imports from resolver)
+spec.ts    surfaces.ts    text-metrics.ts        contrast.ts
+    \           |               /                 |      \
+     \          |              /                  |       \  (ColorScheme type only)
+      \         |             /                   |        \
+       ---->  resolver.ts  <-----------------------         v
+        (imports axis.ts, layout.ts —          layout.ts (types only,
+         NOT contrast.ts's palettes)             no imports from resolver)
+                    |                             ^
+                    v                            /
+              layout.ts ------------------------/
                /            \
               v              v
      render-dom.tsx    render-canvas.tsx
+     (also imports     (also imports
+      contrast.ts)      contrast.ts)
               \              /
                v            v
                   App.tsx
@@ -26,6 +29,8 @@ spec.ts        surfaces.ts        text-metrics.ts
 
 - **A new surface** is a `SurfaceProfile` object (validated by `defineSurface()`) passed into the same `resolveLayout()`. Nothing in `resolver.ts` branches on `surface.id`; the only per-surface reasoning is the aspect-ratio classification and the constraint values (`minTapTarget`, `minTextSize`, `safeArea`, …) themselves. `resolver.test.ts`'s "video wall" test constructs a 3600×480 surface that shares no code path with any preset and asserts it resolves correctly.
 - **A new renderer** consumes `ResolvedLayout` (`layout.ts`) and, separately, `AdSpec` (`spec.ts`) for content — it does not import `resolver.ts` at all. `render-canvas.tsx` is the proof: it was added after the DOM renderer with zero edits to `resolver.ts`, `axis.ts`, or `layout.ts`.
+
+Color follows the same one-way split, one level down: `resolver.ts` decides *which* scheme (`"light" | "dark"`, from `surface.background`) without ever importing `contrast.ts` — it doesn't need to know what colors a scheme means, only that surfaces have one. Only the two renderers import `contrast.ts`'s `PALETTES` to turn that decision into actual hex values. A new renderer inherits accessible color for free by importing the same module; it never has to make its own contrast judgment call.
 
 ## The core primitive: `allocateAxis`
 
@@ -106,8 +111,11 @@ Image and branding sizing follows the same principle: `heroSize.min = max(scale 
 
 **Add a role.** Add it to `ELEMENT_ROLES` in `spec.ts` and to `ROLE_VISUAL_ORDER` in `resolver.ts` (TypeScript's `Record<ElementRole, number>` will refuse to compile until you do). Decide whether it should ever be `canDrop: true` in `stackItems`/`bandItems` (currently hardcoded to `role === "branding"` — generalizing this to a spec-level or role-level flag would be the natural next step if more than one droppable role were needed).
 
+**Add a color scheme.** Add the variant to `ColorScheme` in `contrast.ts` and a matching entry in `PALETTES` — `contrast.test.ts`'s `it.each(Object.entries(PALETTES))` picks it up automatically and will fail the build if any of its four pairings don't clear WCAG AA, so a scheme that looks fine but isn't accessible can't merge silently. `resolver.ts` needs no changes; it only ever produces the literal `surface.background` gives it.
+
 ## Notable design decisions
 
 - **Only `branding` is ever fully dropped.** Every other role has a hard floor it clamps to (font floor, `minTapTarget`) but never disappears. This was a deliberate reading of the brief's own example language ("branding shrinks/drops, secondary text truncates") into a single, easy-to-state invariant, rather than a generic "any low-priority element can vanish" rule that would make behavior harder to predict per-role.
 - **Branding never floats as a corner badge.** It's laid out as the lowest-priority row in whatever content lane it's in. This guarantees zero overlap *by construction* (sequential lanes with a running cursor structurally cannot overlap) at the cost of the more conventional "logo bug in the corner, overlapping the hero image" placement real broadcast/kiosk graphics often use. A corner-badge version is possible but needs explicit collision handling against the hero region — noted in the README limitations rather than half-implemented.
 - **The final `guardBounds()` pass** in `resolver.ts` clamps any element that would exceed the surface (and records a warning if it had to). Every flow already places elements within bounds by construction, so in practice this only ever fires for the pathological last-resort-clamp case in `allocateAxis`. It's there as a safety net, not as the mechanism that makes layouts correct — treat it as defense in depth, not as "the code that prevents overlaps." The thing that actually prevents overlaps is that stack/band never place two elements at the same cursor position, and quadrant's two regions are disjoint by construction (`heroLen + gap` boundary).
+- **`colorScheme` is one decision per surface, not one per element.** A surface either composites over something light or something dark — it doesn't make sense for the headline and the CTA on the *same* frame to disagree about which world they're in. This is also why it lives on `SurfaceProfile` next to `minTapTarget`/`minTextSize` rather than on `AdElement`: it's a constraint the surface imposes, not a preference the ad content expresses. The hero image's placeholder is the deliberate exception — it stands in for a real photo, which would carry its own colors regardless of scheme, so it's the one element that ignores `colorScheme` entirely.

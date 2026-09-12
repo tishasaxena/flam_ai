@@ -473,11 +473,43 @@
   background: var(--flow-quadrant-bg);
 }
 
-/* Shared between the DOM and Canvas renderers */
+.scheme-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+}
+
+.scheme-badge--light {
+  color: #6b5d1f;
+  background: #fdf9ec;
+  border-color: #ecdfa8;
+}
+
+.scheme-badge--dark {
+  color: #e4e6f7;
+  background: #21243d;
+  border-color: #383c60;
+}
+
+/*
+ * Shared between the DOM and Canvas renderers. Colors for text/button/
+ * branding are NOT set here — they come inline from contrast.ts's
+ * WCAG-checked palettes, keyed by the resolved `colorScheme`, so this
+ * stylesheet never fights the accessibility decision the resolver made.
+ * Only scheme-independent structure (radius, shadow, layout, transitions)
+ * lives here.
+ */
 .ad-surface {
   position: relative;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(20, 22, 31, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(120, 120, 145, 0.22);
+  transition: background 260ms ease;
 }
 
 .ad-surface--canvas {
@@ -488,31 +520,18 @@
   overflow: hidden;
   transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1),
     width 260ms cubic-bezier(0.22, 1, 0.36, 1), height 260ms cubic-bezier(0.22, 1, 0.36, 1), font-size 260ms ease,
-    opacity 200ms ease;
-}
-
-.ad-el--text {
-  font-weight: 400;
-  color: var(--text-muted);
-  overflow: hidden;
-}
-
-.ad-el--text[data-role="primary"] {
-  font-weight: 700;
-  color: #0f1222;
+    color 200ms ease, background 200ms ease, opacity 200ms ease;
 }
 
 .ad-el--button {
   border: none;
   border-radius: 8px;
-  background: linear-gradient(180deg, #5b52ea 0%, var(--accent) 100%);
-  color: var(--accent-contrast);
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), 0 6px 14px -6px rgba(79, 70, 229, 0.55);
+  box-shadow: 0 1px 2px rgba(20, 22, 40, 0.18), 0 6px 14px -6px rgba(20, 22, 40, 0.35);
 }
 
 .ad-el__button-label {
@@ -532,7 +551,6 @@
 }
 
 .ad-el--image[data-role="branding"] {
-  background: #e7e8f0;
   border-radius: 6px;
 }
 
@@ -545,7 +563,6 @@
 
 .ad-el__placeholder-label {
   font-size: 10px;
-  color: #52559a;
   font-weight: 500;
   padding: 4px;
   line-height: 1.25;

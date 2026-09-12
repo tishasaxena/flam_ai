@@ -91,6 +91,7 @@ export function resolveLayout(spec: AdSpec, surface: SurfaceProfile, options: Re
     surfaceWidth: surface.width,
     surfaceHeight: surface.height,
     flow,
+    colorScheme: surface.background === "dark" ? "dark" : "light",
     elements: guardedElements,
     dropped: result.dropped,
     warnings: [...result.warnings, ...guardWarnings],

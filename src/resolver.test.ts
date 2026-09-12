@@ -70,6 +70,16 @@ describe("resolveLayout", () => {
     }
   });
 
+  it("resolves colorScheme from surface.background, defaulting to light", () => {
+    expect(resolveLayout(demoAd, surfaces.mobilePortrait).colorScheme).toBe("light");
+    expect(resolveLayout(demoAd, surfaces.broadcastLowerThird).colorScheme).toBe("dark");
+
+    const explicitLight = defineSurface({ id: "explicit-light", width: 400, height: 400, background: "light" });
+    const explicitDark = defineSurface({ id: "explicit-dark", width: 400, height: 400, background: "dark" });
+    expect(resolveLayout(demoAd, explicitLight).colorScheme).toBe("light");
+    expect(resolveLayout(demoAd, explicitDark).colorScheme).toBe("dark");
+  });
+
   it("respects minTapTarget on touch surfaces for the CTA", () => {
     const layout = resolveLayout(demoAd, surfaces.retailKiosk);
     const cta = layout.elements.find((e) => e.id === "cta")!;
