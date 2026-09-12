@@ -362,8 +362,20 @@ function placeElement(el: AdElement, itemRect: Rect, surface: SurfaceProfile, me
       return { kind: "text", id: el.id, ...itemRect, fontSize, truncated };
     }
     case "button": {
-      const fontSize = Math.max(surface.minTextSize ?? 12, itemRect.height * 0.38);
-      const truncated = measureText(el.label, fontSize, { fontWeight: fontWeightFor(el) }) > itemRect.width;
+      const floor = surface.minTextSize ?? 12;
+      const weight = { fontWeight: fontWeightFor(el) };
+      const heightFont = Math.max(floor, itemRect.height * 0.38);
+      // A tap-target-driven height can make a button far taller than it is
+      // wide (e.g. a large minTapTarget in a narrow lane) — sizing the font
+      // from height alone then overflows the label into an unreadable
+      // sliver of the button. Mirror stackSizeSpec's text-fit logic: solve
+      // for the font size at which the label's *measured* width fits the
+      // button, and never exceed the height-comfortable size.
+      const labelPadding = 12; // matches .ad-el__button-label's `padding: 0 6px`
+      const widthPerPx = measureText(el.label, 100, weight) / 100;
+      const fitFont = widthPerPx > 0 ? Math.max(0, itemRect.width - labelPadding) / widthPerPx : heightFont;
+      const fontSize = Math.max(floor, Math.min(heightFont, fitFont));
+      const truncated = measureText(el.label, fontSize, weight) > itemRect.width - labelPadding;
       return { kind: "button", id: el.id, ...itemRect, fontSize, truncated };
     }
     case "image": {

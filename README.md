@@ -126,7 +126,7 @@ src/
 
 ## AI tool disclosure
 
-Claude was used for guidance only during this project.
+Claude.
 
 ## Time spent
 
